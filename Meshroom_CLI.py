@@ -1,3 +1,4 @@
+from distutils import cmd
 import os
 import zipfile
 import io
@@ -42,8 +43,8 @@ def index():
 @app.get("/get_zip")
 def index2():
     #works but not with docs
-    #shutil.make_archive('output', 'zip', r'C:\Users\TANG\Desktop\FYP\meshroom_CLI\output\13_Texturing')
-    shutil.make_archive('output', 'zip', r'C:\Users\TANG\Desktop\FYP\meshroom_CLI\output')
+    shutil.make_archive('output', 'zip', r'C:\Users\TANG\Desktop\FYP\meshroom_CLI\output\13_Texturing')
+    #shutil.make_archive('output', 'zip', r'C:\Users\TANG\Desktop\FYP\meshroom_CLI\output')
     zipped_file = r"C:\Users\TANG\Desktop\FYP\meshroom_CLI\output.zip"
     s = io.BytesIO()
     response = FileResponse(zipped_file)
@@ -169,7 +170,7 @@ def run_1_cameraInit(binPath,baseDir,imgDir):
     cmdLine += " --imageFolder {0} --sensorDatabase {1} --output {2}".format(
         imageFolder, sensorDatabase, output)
 
-    cmdLine += " --defaultFieldOfView 45" 
+    cmdLine += " --defaultFieldOfView 45.0" 
     cmdLine += " --allowSingleView 1"
     cmdLine += " --verboseLevel " + verboseLevel
 
@@ -191,7 +192,7 @@ def run_2_featureExtraction(binPath,baseDir , numberOfImages , imagesPerGroup=40
 
     cmdLine = binPath + "\\aliceVision_featureExtraction"
     cmdLine += " --input {0} --output {1}".format(_input, output)
-    cmdLine += " --forceCpuExtraction 1"
+    cmdLine += " --describerTypes sift --describerPreset normal --describerQuality normal --contrastFiltering GridSort --gridFiltering True --forceCpuExtraction 1"
 
 
     #when there are more than 40 images, it is good to send them in groups
@@ -224,7 +225,7 @@ def run_3_imageMatching(binPath,baseDir):
         _input, featuresFolders, output)
 
     cmdLine +=  " --tree " + "\""+ str(Path(binPath).parent)+ "/share/aliceVision/vlfeat_K80L3.SIFT.tree\""
-    cmdLine += " --verboseLevel " + verboseLevel
+    cmdLine += " --weights "" --minNbImages 200 --maxDescriptors 500 --nbMatches 50 --verboseLevel " + verboseLevel
 
     print(cmdLine)
     os.system(cmdLine)
@@ -246,12 +247,12 @@ def run_4_featureMatching(binPath,baseDir,numberOfImages,imagesPerGroup=20):
     cmdLine += " --input {0} --featuresFolders {1} --output {2} --imagePairsList {3}".format(
         _input, featuresFolders, output, imagePairsList)
 
-    cmdLine += " --knownPosesGeometricErrorMax 5"
+    
     cmdLine += " --verboseLevel " + verboseLevel
 
     cmdLine += " --describerTypes sift --photometricMatchingMethod ANN_L2 --geometricEstimator acransac --geometricFilterType fundamental_matrix --distanceRatio 0.8"
-    cmdLine += " --maxIteration 2048 --geometricError 0.0 --maxMatches 0"
-    cmdLine += " --savePutativeMatches False --guidedMatching False --matchFromKnownCameraPoses False --exportDebugFiles True"
+    cmdLine += " --maxIteration 2048 --geometricError 0.0 --knownPosesGeometricErrorMax 5.0 --maxMatches 0"
+    cmdLine += " --savePutativeMatches False --guidedMatching False --matchFromKnownCameraPoses False --exportDebugFiles False"
 
     #when there are more than 20 images, it is good to send them in groups
     if(numberOfImages>imagesPerGroup):
@@ -284,7 +285,7 @@ def run_5_structureFromMotion(binPath,baseDir):
     cmdLine += " --input {0} --output {1} --outputViewsAndPoses {2} --extraInfoFolder {3} --featuresFolders {4} --matchesFolders {5}".format(
         _input, output, outputViewsAndPoses, extraInfoFolder, featuresFolders, matchesFolders)
 
-    cmdLine += " --verboseLevel " + verboseLevel
+    cmdLine += " --describerTypes sift --localizerEstimator acransac --observationConstraint Basic --localizerEstimatorMaxIterations 4096 --localizerEstimatorError 0.0 --lockScenePreviouslyReconstructed False --useLocalBA True --localBAGraphDistance 1 --maxNumberOfMatches 0 --minNumberOfMatches 0 --minInputTrackLength 2 --minNumberOfObservationsForTriangulation 2 --minAngleForTriangulation 3.0 --minAngleForLandmark 2.0 --maxReprojectionError 4.0 --minAngleInitialPair 5.0 --maxAngleInitialPair 40.0 --useOnlyMatchesFromInputFolder False --useRigConstraint True --lockAllIntrinsics False --filterTrackForks False  --interFileExtension .abc --verboseLevel " + verboseLevel
 
     print(cmdLine)
     os.system(cmdLine)
@@ -301,7 +302,7 @@ def run_6_prepareDenseScene(binPath,baseDir):
     cmdLine = binPath + "\\aliceVision_prepareDenseScene.exe"
     cmdLine += " --input {0}  --output {1} ".format(_input,  output)
 
-    cmdLine += " --verboseLevel " + verboseLevel
+    cmdLine += " --outputFileType exr --saveMetadata True --saveMatricesTxtFiles False --evCorrection False --verboseLevel " + verboseLevel
 
     print(cmdLine)
     os.system(cmdLine)
@@ -321,7 +322,7 @@ def run_7_depthMap(binPath,baseDir ,numberOfImages , groupSize=6 , downscale = 2
         _input,  output, imagesFolder)
 
     cmdLine += " --verboseLevel " + verboseLevel
-    cmdLine += " --downscale " + str(downscale)
+    cmdLine += " --downscale " + str(downscale) + " --minViewAngle 2.0 --maxViewAngle 70.0 --sgmMaxTCams 10 --sgmWSH 4 --sgmGammaC 5.5 --sgmGammaP 8.0 --refineMaxTCams 6 --refineNSamplesHalf 150 --refineNDepthsToRefine 31 --refineNiters 100 --refineWSH 3 --refineSigma 15 --refineGammaC 15.5 --refineGammaP 8.0 --refineUseTcOrRcPixSize False --exportIntermediateResults False --nbGPUs 0"
 
     
     numberOfBatches = int(math.ceil( numberOfImages / groupSize ))
@@ -349,13 +350,13 @@ def run_8_depthMapFilter(binPath,baseDir):
     cmdLine += " --input {0}  --output {1} --depthMapsFolder {2}".format(
         _input,  output, depthMapsFolder)
 
-    cmdLine += " --verboseLevel " + verboseLevel
+    cmdLine += " --minViewAngle 2.0 --maxViewAngle 70.0 --nNearestCams 10 --minNumOfConsistentCams 3 --minNumOfConsistentCamsWithLowSimilarity 4 --pixSizeBall 0 --pixSizeBallWithLowSimilarity 0 --computeNormalMaps False --verboseLevel " + verboseLevel
 
     print(cmdLine)
     os.system(cmdLine)
 
 
-def run_9_meshing(binPath,baseDir  , maxInputPoints = 50000000  , maxPoints=1000000):
+def run_9_meshing(binPath,baseDir  , maxInputPoints = 500000 , maxPoints=100000):
     taskFolder = "/9_Meshing"
     SilentMkdir(baseDir + taskFolder)
 
@@ -369,8 +370,10 @@ def run_9_meshing(binPath,baseDir  , maxInputPoints = 50000000  , maxPoints=1000
     cmdLine += " --input {0}  --output {1} --outputMesh {2} --depthMapsFolder {3} ".format(
         _input,  output, outputMesh, depthMapsFolder)
 
+    cmdLine += " --estimateSpaceFromSfM True --estimateSpaceMinObservations 3 --estimateSpaceMinObservationAngle 10"
     cmdLine += " --maxInputPoints " + str(maxInputPoints)
     cmdLine += " --maxPoints " + str(maxPoints)
+    cmdLine += " --maxPointsPerVoxel 1000000 --minStep 2 --partitioning singleBlock --repartition multiResolution --angleFactor 15.0 --simFactor 15.0 --pixSizeMarginInitCoef 2.0 --pixSizeMarginFinalCoef 4.0 --voteMarginFactor 4.0 --contributeMarginFactor 2.0 --simGaussianSizeInit 10.0 --simGaussianSize 10.0 --minAngleThreshold 1.0 --refineFuse True --helperPointsGridSize 10 --nPixelSizeBehind 4.0 --fullWeight 1.0 --voteFilteringForWeaklySupportedSurfaces True --addLandmarksToTheDensePointCloud False --invertTetrahedronBasedOnNeighborsNbIterations 10 --minSolidAngleRatio 0.2 --nbSolidAngleFilteringIterations 2 --colorizeOutput False --maxNbConnectedHelperPoints 50 --saveRawDensePointCloud False --exportDebugTetrahedralization False --seed 0"
     cmdLine += " --verboseLevel " + verboseLevel
 
 
@@ -390,50 +393,52 @@ def run_10_meshFiltering(binPath,baseDir ,keepLargestMeshOnly="True"):
     cmdLine += " --inputMesh {0}  --outputMesh {1}".format(
         inputMesh, outputMesh)
 
+   
+    # cmdLine += " --keepLargestMeshOnly " + keepLargestMeshOnly
+    cmdLine += " --keepLargestMeshOnly False --smoothingSubset all --smoothingBoundariesNeighbours 0 --smoothingIterations 5 --smoothingLambda 1.0 --filteringSubset all --filteringIterations 1 --filterLargeTrianglesFactor 60.0 --filterTrianglesRatio 0.0"
     cmdLine += " --verboseLevel " + verboseLevel
-    cmdLine += " --keepLargestMeshOnly " + keepLargestMeshOnly
 
     print(cmdLine)
     os.system(cmdLine)
 
 
-def run_11_meshDecimate(binPath,baseDir , simplificationFactor=0.8 , maxVertices=15000):
-    taskFolder = "/11_MeshDecimate"
-    SilentMkdir(baseDir + taskFolder)
+# def run_11_meshDecimate(binPath,baseDir , simplificationFactor=0.8 , maxVertices=15000):
+#     taskFolder = "/11_MeshDecimate"
+#     SilentMkdir(baseDir + taskFolder)
 
-    print("----------------------- 11/13 MESH DECIMATE -----------------------")
-    inputMesh = "\""  + baseDir + "/10_MeshFiltering/mesh.obj" + "\""
-    outputMesh = "\""  + baseDir + taskFolder + "/mesh.obj" + "\""
+#     print("----------------------- 11/13 MESH DECIMATE -----------------------")
+#     inputMesh = "\""  + baseDir + "/10_MeshFiltering/mesh.obj" + "\""
+#     outputMesh = "\""  + baseDir + taskFolder + "/mesh.obj" + "\""
 
-    cmdLine = binPath + "\\aliceVision_meshDecimate.exe"
-    cmdLine += " --input {0}  --output {1}".format(
-        inputMesh, outputMesh)
+#     cmdLine = binPath + "\\aliceVision_meshDecimate.exe"
+#     cmdLine += " --input {0}  --output {1}".format(
+#         inputMesh, outputMesh)
 
-    cmdLine += " --verboseLevel " + verboseLevel
-    cmdLine += " --simplificationFactor " + str(simplificationFactor)
-    cmdLine += " --maxVertices " + str(maxVertices)
+#     cmdLine += " --verboseLevel " + verboseLevel
+#     cmdLine += " --simplificationFactor " + str(simplificationFactor)
+#     cmdLine += " --maxVertices " + str(maxVertices)
 
-    print(cmdLine)
-    os.system(cmdLine)
+#     print(cmdLine)
+#     os.system(cmdLine)
 
 
-def run_12_meshResampling(binPath,baseDir , simplificationFactor=0.8 , maxVertices=15000):
-    taskFolder = "/12_MeshResampling"
-    SilentMkdir(baseDir + taskFolder)
+# def run_12_meshResampling(binPath,baseDir , simplificationFactor=0.8 , maxVertices=15000):
+#     taskFolder = "/12_MeshResampling"
+#     SilentMkdir(baseDir + taskFolder)
 
-    print("----------------------- 12/13 MESH RESAMPLING -----------------------")
-    inputMesh = "\"" + baseDir +  "/11_MeshDecimate/mesh.obj" + "\""
-    outputMesh = "\"" + baseDir  + taskFolder + "/mesh.obj" + "\""
+#     print("----------------------- 12/13 MESH RESAMPLING -----------------------")
+#     inputMesh = "\"" + baseDir +  "/11_MeshDecimate/mesh.obj" + "\""
+#     outputMesh = "\"" + baseDir  + taskFolder + "/mesh.obj" + "\""
 
-    cmdLine = binPath + "\\aliceVision_meshResampling.exe"
-    cmdLine += " --input {0}  --output {1}".format( inputMesh, outputMesh)
+#     cmdLine = binPath + "\\aliceVision_meshResampling.exe"
+#     cmdLine += " --input {0}  --output {1}".format( inputMesh, outputMesh)
 
-    cmdLine += " --verboseLevel " + verboseLevel
-    cmdLine += " --simplificationFactor " + str(simplificationFactor)
-    cmdLine += " --maxVertices " + str(maxVertices)
+#     cmdLine += " --verboseLevel " + verboseLevel
+#     cmdLine += " --simplificationFactor " + str(simplificationFactor)
+#     cmdLine += " --maxVertices " + str(maxVertices)
 
-    print(cmdLine)
-    os.system(cmdLine)
+#     print(cmdLine)
+#     os.system(cmdLine)
 
 
 def run_13_texturing(binPath , baseDir , textureSide = 4096 , downscale=4 , unwrapMethod = "Basic"):
@@ -443,7 +448,7 @@ def run_13_texturing(binPath , baseDir , textureSide = 4096 , downscale=4 , unwr
     print("----------------------- 13/13 TEXTURING  -----------------------")
     _input = "\"" + baseDir +   "/9_Meshing/densePointCloud.abc" + "\""
     imagesFolder = "\""  + baseDir + "/6_PrepareDenseScene" "\""
-    inputMesh = "\"" + baseDir + "/12_MeshResampling/mesh.obj" + "\""
+    inputMesh = "\"" + baseDir + "/10_MeshFiltering/mesh.obj" + "\""
     output = "\"" + baseDir + taskFolder + "\""
 
     cmdLine = binPath + "\\aliceVision_texturing.exe"
@@ -453,7 +458,8 @@ def run_13_texturing(binPath , baseDir , textureSide = 4096 , downscale=4 , unwr
     cmdLine += " --textureSide " + str(textureSide)
     cmdLine += " --downscale " + str(downscale)
     cmdLine += " --verboseLevel " + verboseLevel
-    cmdLine += " --unwrapMethod " + unwrapMethod
+    #cmdLine += " --unwrapMethod " + unwrapMethod
+    cmdLine += " --outputTextureFileType png --unwrapMethod Basic --useUDIM True --fillHoles False --padding 5 --multiBandDownscale 4 --multiBandNbContrib 1 5 10 0 --useScore True --bestScoreThreshold 0.1 --angleHardThreshold 90.0 --processColorspace sRGB --correctEV False --forceVisibleByAllVertices False --flipNormals False --visibilityRemappingMethod PullPush --subdivisionTargetRatio 0.8"
 
     print(cmdLine)
     os.system(cmdLine)
@@ -482,8 +488,8 @@ def main():
     run_8_depthMapFilter(binPath,baseDir)
     run_9_meshing(binPath,baseDir)
     run_10_meshFiltering(binPath,baseDir)
-    run_11_meshDecimate(binPath,baseDir)
-    run_12_meshResampling(binPath,baseDir)
+    # run_11_meshDecimate(binPath,baseDir)
+    # run_12_meshResampling(binPath,baseDir)
     run_13_texturing(binPath,baseDir)
 
     
