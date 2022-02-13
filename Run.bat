@@ -1,0 +1,1 @@
+python meshroom_CLI.py "Bin folder of the Meshroom folder" "Output folder" "Input folder with images"
