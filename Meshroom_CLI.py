@@ -37,27 +37,31 @@ baseDir = r"C:\Users\TANG\Desktop\FYP\meshroom_CLI\output" # sys.argv[2]        
 imgDir = r"C:\Users\TANG\Desktop\FYP\meshroom_CLI\input"#sys.argv[3]            ##  --> Folder containing the images 
 
 @app.get("/get_obj")
-def index():
+def get_3d_Object():
     return FileResponse(r"C:\Users\TANG\Desktop\FYP\meshroom_CLI\output\adidas_hole\texturedMesh.obj")
 
 @app.get("/get_zip")
-def index2():
-    #works but not with docs
-    shutil.make_archive('output', 'zip', r'C:\Users\TANG\Desktop\FYP\meshroom_CLI\output\13_Texturing')
-    #shutil.make_archive('output', 'zip', r'C:\Users\TANG\Desktop\FYP\meshroom_CLI\output')
-    zipped_file = r"C:\Users\TANG\Desktop\FYP\meshroom_CLI\output.zip"
+def get_obj_zip():
+    shutil.make_archive(r'C:\Users\TANG\Desktop\FYP\meshroom_CLI\output\gen3D', 'zip', r'C:\Users\TANG\Desktop\FYP\meshroom_CLI\output\13_Texturing')
+    zipped_file = r"C:\Users\TANG\Desktop\FYP\meshroom_CLI\output\gen3D.zip"
     s = io.BytesIO()
     response = FileResponse(zipped_file)
     return response
 
 @app.get("/emptyOutput")
-def deleteOutput():
+def delete_Output():
     folder = clearDirectory(baseDir)
     return "folder removed: " + folder
 
 @app.get("/emptyInput")
-def deleteInput():
+def delete_Input():
     folder = clearDirectory(imgDir)
+    return "folder removed: " + folder
+
+@app.get("/clearServer")
+def clear_Server():
+    folder = clearDirectory(imgDir)
+    folder = clearDirectory(baseDir)
     return "folder removed: " + folder
 
 
@@ -69,7 +73,7 @@ async def upload(file: UploadFile = File(...)):
     return {"file_name":file.filename}
 
 @app.post("/upload_zip")
-async def z_upload(file: UploadFile = File(...)):
+async def zip_upload(file: UploadFile = File(...)):
     with open(f'{file.filename}','wb') as buffer:
         shutil.copyfileobj(file.file, buffer)
         shutil.unpack_archive(file.filename, imgDir)
@@ -78,7 +82,7 @@ async def z_upload(file: UploadFile = File(...)):
     return {"file_name":file.filename}
 
 @app.post("/m_upload")
-async def m_upload(files: List[UploadFile] = File(...)):
+async def multiple_upload(files: List[UploadFile] = File(...)):
     file_list = []
     for img in files:
         file_list.append(str(img.filename))
@@ -112,31 +116,6 @@ def clearDirectory(path):
             print('Failed to delete %s. Reason: %s' % (file_path, e))
     return path
 
-
-    
-
-# def zipfiles(filenames):
-#     zip_filename = "archive.zip"
-
-#     s = io.BytesIO()
-#     zf = zipfile.ZipFile(s, "w")
-
-#     for fpath in filenames:
-#         # Calculate path for file in zip
-#         fdir, fname = os.path.split(fpath)
-
-#         # Add file, at correct path
-#         zf.write(fpath, fname)
-
-#     # Must close zip for all contents to be written
-#     zf.close()
-
-#     # Grab ZIP file from in-memory, make response with correct MIME-type
-#     resp = Response(s.getvalue(), media_type="application/x-zip-compressed", headers={
-#         'Content-Disposition': f'attachment;filename={zip_filename}'
-#     })
-
-#     return resp
 
 def SilentMkdir(theDir):    # function to create a directory
     try:
@@ -468,9 +447,6 @@ def run_13_texturing(binPath , baseDir , textureSide = 4096 , downscale=4 , unwr
 
 def main():
     
-#C:\Users\TANG\Desktop\FYP\meshroom_CLI\dataset_monstree-master
-#C:\Users\TANG\Downloads\Meshroom-2021.1.0-win64\Meshroom-2021.1.0\aliceVision\bin
-#C:\Users\TANG\Desktop\FYP\meshroom_CLI\output
 
     numberOfImages =  len([name for name in os.listdir(imgDir) if os.path.isfile(os.path.join(imgDir, name))])      ## number of files in the folder
 
@@ -501,7 +477,3 @@ def main():
     print("press any key to close")
 
 
-
-
-# if __name__ == "__main__":
-#     uvicorn.run(app, host="0.0.0.0", port=8000)
